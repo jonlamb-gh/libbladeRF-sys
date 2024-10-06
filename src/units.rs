@@ -226,22 +226,19 @@ fn pretty_fmt(h: Hertz, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum ParseHertzError {
+    #[error("Empty value")]
     Empty,
+    #[error("Invalid unit")]
     UnitError,
-    IntError(ParseIntError),
+    #[error("Parse error. {0}")]
+    IntError(String),
 }
 
 impl From<ParseIntError> for ParseHertzError {
     fn from(e: ParseIntError) -> Self {
-        ParseHertzError::IntError(e)
-    }
-}
-
-impl fmt::Display for ParseHertzError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        ParseHertzError::IntError(e.to_string())
     }
 }
 

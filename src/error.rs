@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[non_exhaustive]
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, thiserror::Error)]
 pub enum Error {
     CString,
     SamplesPerBuffer,
