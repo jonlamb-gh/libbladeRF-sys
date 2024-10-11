@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 bitfield! {
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default, Serialize, Deserialize)]
     pub struct MetaFlags(u32);
     u32;
     pub tx_burst_start, set_tx_burst_start : 0;
@@ -16,12 +16,6 @@ bitfield! {
     pub rx_hw_miniexp1, _ : 16;
     pub rx_hw_miniexp2, _ : 17;
     pub rx_now, set_rx_now : 31;
-}
-
-impl Default for MetaFlags {
-    fn default() -> MetaFlags {
-        MetaFlags(0)
-    }
 }
 
 impl From<u32> for MetaFlags {
@@ -43,17 +37,11 @@ impl fmt::Display for MetaFlags {
 }
 
 bitfield! {
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default, Serialize, Deserialize)]
     pub struct MetaStatus(u32);
     u32;
     pub overrun, _ : 0;
     pub underrun, _ : 1;
-}
-
-impl Default for MetaStatus {
-    fn default() -> MetaStatus {
-        MetaStatus(0)
-    }
 }
 
 impl MetaStatus {

@@ -132,21 +132,21 @@ impl From<u64> for MegaHertz {
     }
 }
 
-impl Into<Hertz> for KiloHertz {
-    fn into(self) -> Hertz {
-        Hertz(self.0 * 1_000)
+impl From<KiloHertz> for Hertz {
+    fn from(value: KiloHertz) -> Self {
+        Self(value.0 * 1_000)
     }
 }
 
-impl Into<Hertz> for MegaHertz {
-    fn into(self) -> Hertz {
-        Hertz(self.0 * 1_000_000)
+impl From<MegaHertz> for Hertz {
+    fn from(value: MegaHertz) -> Self {
+        Self(value.0 * 1_000_000)
     }
 }
 
-impl Into<KiloHertz> for MegaHertz {
-    fn into(self) -> KiloHertz {
-        KiloHertz(self.0 * 1_000)
+impl From<MegaHertz> for KiloHertz {
+    fn from(value: MegaHertz) -> Self {
+        Self(value.0 * 1_000)
     }
 }
 
@@ -188,13 +188,13 @@ impl PartialEq<KiloHertz> for MegaHertz {
 
 impl fmt::Display for Sps {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} Sps", self.0)
+        pretty_fmt_sps(*self, f)
     }
 }
 
 impl fmt::Display for Hertz {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        pretty_fmt(*self, f)
+        pretty_fmt_hz(*self, f)
     }
 }
 
@@ -214,7 +214,7 @@ pub const ONE_KHZ: Hertz = Hertz(1_000);
 pub const ONE_MHZ: Hertz = Hertz(1_000_000);
 pub const ONE_GHZ: Hertz = Hertz(1_000_000_000);
 
-fn pretty_fmt(h: Hertz, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+fn pretty_fmt_hz(h: Hertz, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     if h.0 >= ONE_GHZ.0 {
         write!(f, "{:.04} GHz", h.as_f64() / ONE_GHZ.as_f64())
     } else if h.0 >= ONE_MHZ.0 {
@@ -226,8 +226,20 @@ fn pretty_fmt(h: Hertz, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     }
 }
 
+fn pretty_fmt_sps(h: Sps, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    if h.0 >= ONE_GHZ.0 {
+        write!(f, "{:.04} GSps", h.as_f64() / ONE_GHZ.as_f64())
+    } else if h.0 >= ONE_MHZ.0 {
+        write!(f, "{:.04} MSps", h.as_f64() / ONE_MHZ.as_f64())
+    } else if h.0 >= ONE_KHZ.0 {
+        write!(f, "{:.04} KSps", h.as_f64() / ONE_KHZ.as_f64())
+    } else {
+        write!(f, "{} Sps", h.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum ParseHertzError {
+pub enum ParseUnitError {
     #[error("Empty value")]
     Empty,
     #[error("Invalid unit")]
@@ -236,40 +248,40 @@ pub enum ParseHertzError {
     IntError(String),
 }
 
-impl From<ParseIntError> for ParseHertzError {
+impl From<ParseIntError> for ParseUnitError {
     fn from(e: ParseIntError) -> Self {
-        ParseHertzError::IntError(e.to_string())
+        ParseUnitError::IntError(e.to_string())
     }
 }
 
 impl FromStr for Hertz {
-    type Err = ParseHertzError;
+    type Err = ParseUnitError;
 
     // TODO - add floats, 1.4K -> 1_400 Hz, GHz
     // Values can be specified as an integer (89100000),
     // a float (89.1e6) or as a metric suffix (89.1M)
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            Err(ParseHertzError::Empty)
+            Err(ParseUnitError::Empty)
         } else {
             // Last char can be a unit: h | H, k | K, m | M
             let last_index = s.len() - 1;
-            let last_char = s.chars().last().ok_or(ParseHertzError::Empty)?;
+            let last_char = s.chars().last().ok_or(ParseUnitError::Empty)?;
             let f = match last_char {
                 'h' | 'H' => s
                     .get(..last_index)
-                    .ok_or(ParseHertzError::Empty)?
+                    .ok_or(ParseUnitError::Empty)?
                     .parse::<u64>()?
                     .hz(),
                 'k' | 'K' => s
                     .get(..last_index)
-                    .ok_or(ParseHertzError::Empty)?
+                    .ok_or(ParseUnitError::Empty)?
                     .parse::<u64>()?
                     .khz()
                     .into(),
                 'm' | 'M' => s
                     .get(..last_index)
-                    .ok_or(ParseHertzError::Empty)?
+                    .ok_or(ParseUnitError::Empty)?
                     .parse::<u64>()?
                     .mhz()
                     .into(),
@@ -281,11 +293,13 @@ impl FromStr for Hertz {
 }
 
 impl FromStr for Sps {
-    type Err = ParseIntError;
+    type Err = ParseUnitError;
 
     // TODO - add floats, 1.4K -> 1_400 Sps
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(s.parse::<u64>()?.sps())
+        // Just re-use Hertz impl for now
+        let rate = Hertz::from_str(s)?;
+        Ok(Sps(rate.0))
     }
 }
 
@@ -326,5 +340,7 @@ mod tests {
     fn sps_from_str() {
         assert_eq!(Sps::from_str("1"), Ok(Sps(1)));
         assert_eq!(Sps::from_str("100"), Ok(Sps(100)));
+
+        assert_eq!(Sps::from_str("2M"), Ok(Sps(2_000_000)));
     }
 }

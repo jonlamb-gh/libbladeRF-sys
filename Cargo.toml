@@ -1,6 +1,6 @@
 [package]
 name = "libbladerf-sys"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Jon Lamb"]
 edition = "2021"
 links = "bladeRF"
